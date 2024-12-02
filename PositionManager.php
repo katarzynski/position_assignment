@@ -114,10 +114,6 @@ class PositionManager
      */
     public function delete($part_id)
     {
-        /**
-         * Business logic doesn't say about require to recalculating positions
-         * so they are kept in asc/desc order with assumption that they can have blank position numbers
-         */
         try {
             // Check if part exists
             $part = Part::findOrFail($part_id);
@@ -126,6 +122,29 @@ class PositionManager
             $part->delete();
 
             return $this->list($episode);
+        } catch (Exception $e) {
+            //Handle Exception in any way
+            throw new Exception($e);
+        }
+    }
+
+    /**
+     * Delete many parts from Episode
+     * @param array $part_ids
+     * @return array|Exception
+     */
+    public function bulkDelete($part_ids, $episode_id)
+    {
+        try {
+            DB::transaction(function () use ($part_ids, $episode_id) {
+                $part = new Part();
+
+                $part->where('episode_id', $episode_id)
+                ->whereIn('id', $part_ids)
+                ->delete();
+            });
+
+            return $this->list($episode_id);
         } catch (Exception $e) {
             //Handle Exception in any way
             throw new Exception($e);
